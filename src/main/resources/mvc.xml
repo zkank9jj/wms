@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <!--引入applicationContext.xml配置文件:包含组件扫描,业务层等Bean-->
+    <import resource="classpath:applicationContext.xml"/>
+
+    <!--MVC的注解驱动器-->
+    <mvc:annotation-driven />
+
+    <!--MVC的拦截器-->
+    <mvc:interceptors>
+        <!--检查登录拦截器-->
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <mvc:exclude-mapping path="/login.do"/>
+            <bean class="cn.wolfcode.wms.web.interceptor.CheckLoginInterceptor"/>
+        </mvc:interceptor>
+        <!--安全检查拦截器-->
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <mvc:exclude-mapping path="/login.do"/>
+            <mvc:exclude-mapping path="/logout.do"/>
+            <mvc:exclude-mapping path="/main.do"/>
+            <bean class="cn.wolfcode.wms.web.interceptor.SecurityInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+    <!--JSP视图解析器-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <!--配置视图前缀-->
+        <property name="prefix" value="/WEB-INF/views/" />
+        <!--配置视图后缀-->
+        <property name="suffix" value=".jsp" />
+    </bean>
+
+    <!--SpringMVC的异常处理解析器-->
+    <bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+        <!-- 定义默认的异常处理页面，当该异常类型的注册时使用 -->
+        <property name="defaultErrorView" value="common/error"/>
+        <!-- 定义异常处理页面用来获取异常信息的变量名，默认名为exception -->
+        <property name="exceptionAttribute" value="ex"/>
+        <!-- 定义需要特殊处理的异常，用类名或完全路径名作为key，异常也页名作为值 -->
+        <property name="exceptionMappings">
+            <value>
+                cn.wolfcode.wms.exception.SecurityException=common/nopermission
+                <!-- 这里还可以继续扩展不同异常类型的异常处理 -->
+            </value>
+        </property>
+    </bean>
+
+    <!--文件上传解析器-->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <!--最大允许上传10M的内容-->
+        <property name="maxUploadSize" value="#{1024 * 1024 * 10}"/>
+    </bean>
+</beans>

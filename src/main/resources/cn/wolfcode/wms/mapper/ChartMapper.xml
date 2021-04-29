@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wolfcode.wms.mapper.ChartMapper">
+  <select id="selectOrderChart" resultType="map">
+    select
+	  ${groupType} groupType,
+	  sum(item.number) totalNumber,
+	  sum(item.amount) totalAmount
+    from orderbill bill
+    join orderbillitem item on bill.id = item.bill_id
+    join employee e on e.id = bill.inputUser_id
+    join product p on p.id = item.product_id
+    join supplier s on s.id = bill.supplier_id
+    where bill.status = 2
+    <if test="beginDate != null">
+      and bill.vdate &gt;= #{beginDate}
+    </if>
+    <if test="endDate != null">
+      and bill.vdate &lt;= #{endDate}
+    </if>
+    <if test="keyword != null">
+      and (p.name like concat('%', #{keyword},'%') or
+           p.sn like concat('%', #{keyword},'%'))
+    </if>
+    <if test="supplierId > 0">
+      and bill.supplier_id = #{supplierId}
+    </if>
+    <if test="brandId > 0">
+      and p.brand_id = #{brandId}
+    </if>
+    group by groupType
+  </select>
+
+  <select id="selectSaleChart" resultType="map">
+    select
+      ${groupType} groupType,
+      sum(sa.number) totalNumber,
+      sum(sa.saleAmount) totalAmount,
+      sum(sa.saleAmount - sa.costAmount) profit
+    from saleaccount sa
+    join employee e on sa.saleman_id = e.id
+    join product p on p.id = sa.product_id
+    join client c on c.id = sa.client_id
+    <where>
+        <if test="beginDate != null">
+          and sa.vdate &gt;= #{beginDate}
+        </if>
+        <if test="endDate != null">
+          and sa.vdate &lt;= #{endDate}
+        </if>
+        <if test="keyword != null">
+          and (p.name like concat('%', #{keyword},'%') or
+               p.sn like concat('%', #{keyword},'%'))
+        </if>
+        <if test="clientId > 0">
+          and sa.client_id = #{clientId}
+        </if>
+        <if test="brandId > 0">
+          and p.brand_id = #{brandId}
+        </if>
+    </where>
+    group by groupType
+  </select>
+</mapper>

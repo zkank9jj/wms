@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wolfcode.wms.mapper.SystemMenuMapper">
+  <resultMap id="BaseResultMap" type="cn.wolfcode.wms.domain.SystemMenu">
+    <id column="id" property="id" />
+    <result column="name" property="name" />
+    <result column="url" property="url" />
+    <result column="sn" property="sn" />
+    <!--封装one方对象-->
+    <association property="parent" javaType="SystemMenu" columnPrefix="parent_">
+      <id column="id" property="id" />
+      <result column="name" property="name" />
+    </association>
+  </resultMap>
+  <delete id="deleteByPrimaryKey">
+    delete from systemmenu
+    where id = #{id}
+  </delete>
+  <delete id="deleteChildMenu">
+    delete from systemmenu where parent_id = #{parentId}
+  </delete>
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+    insert into systemmenu (name, url, sn, parent_id)
+    values (#{name}, #{url}, #{sn}, #{parent.id})
+  </insert>
+  <update id="updateByPrimaryKey">
+    update systemmenu
+    set name = #{name},
+      url = #{url},
+      sn = #{sn},
+      parent_id = #{parent.id}
+    where id = #{id}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    <include refid="base_column"/>
+    <include refid="base_table"/>
+    where child.id = #{id}
+  </select>
+  <select id="selectAll" resultType="SystemMenu">
+    select id, name from systemMenu
+    where parent_id is not null
+  </select>
+  <select id="selectByRoleId" resultType="SystemMenu">
+    SELECT
+        sm.id, sm.name
+    FROM
+        systemmenu sm
+    JOIN role_menu rm ON sm.id = rm.menu_id
+    WHERE
+        rm.role_id = #{roleId}
+  </select>
+  <select id="selectForList" resultMap="BaseResultMap">
+    <include refid="base_column"/>
+    <include refid="base_table"/>
+    where
+    <choose>
+      <!--没有父菜单ID时查询所有父菜单-->
+      <when test="parentId == null">child.parent_id is null</when>
+      <!--有父菜单ID时查询对应的子菜单-->
+      <otherwise>child.parent_id = #{parentId}</otherwise>
+    </choose>
+  </select>
+    <select id="selectMenusBySn" resultType="map">
+      SELECT
+          child.id, child.name, child.url action,  parent.id pId
+      FROM
+          systemmenu child
+      JOIN systemmenu parent ON child.parent_id = parent.id
+      WHERE
+          parent.sn = #{menuSn}
+    </select>
+  <select id="selectMenusBySnAndEmployeeId" resultType="map">
+      SELECT
+          child.id, child.name, child.url action,  parent.id pId
+      FROM
+          systemmenu child
+      JOIN systemmenu parent ON child.parent_id = parent.id
+      JOIN role_menu rm ON rm.menu_id = child.id
+      JOIN employee_role er ON er.role_id = rm.role_id
+      WHERE
+          parent.sn = #{menuSn} AND er.employee_id = #{employeeId}
+  </select>
+
+  <sql id="base_column">
+    SELECT
+      child.id, child.name, child.sn, child.url,
+      parent.id parent_id, parent.name parent_name
+  </sql>
+
+  <sql id="base_table">
+    FROM
+        systemmenu child
+    LEFT JOIN systemmenu parent ON child.parent_id = parent.id
+  </sql>
+
+</mapper>

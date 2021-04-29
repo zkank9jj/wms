@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!--组件扫描器-->
+    <context:component-scan base-package="cn.wolfcode.wms"/>
+
+    <!--属性占位符-->
+    <context:property-placeholder location="classpath:db.properties" system-properties-mode="NEVER"/>
+
+    <!--德鲁伊连接池-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          init-method="init" destroy-method="close">
+        <!--数据库4要术-->
+        <property name="driverClassName" value="${jdbc.driverClassName}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <!--使用过滤器处理-->
+        <property name="filters" value="config,stat" />
+        <!--处理连接参数,解码操作-->
+        <property name="connectionProperties" value="config.decrypt=true" />
+    </bean>
+
+    <!--SqlSessionFactory-->
+    <bean id="sessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--连接池-->
+        <property name="dataSource" ref="dataSource"/>
+        <!--管理的xml文件-->
+        <property name="mapperLocations" value="classpath:cn/wolfcode/wms/mapper/*Mapper.xml"/>
+        <!--别名扫描-->
+        <property name="typeAliasesPackage" value="cn.wolfcode.wms.domain"/>
+        <!--框架的个性配置-->
+        <property name="configLocation" value="classpath:mybatis.xml"/>
+    </bean>
+
+    <!--mapper接口扫描器-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--扫描哪个包中的接口-->
+        <property name="basePackage" value="cn.wolfcode.wms.mapper"/>
+    </bean>
+
+    <!--把事务加到业务层,AOP:3W-->
+    <!--what:做什么增强-->
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--管理哪个连接池的事务-->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <aop:config>
+        <!--where:在哪做增强-->
+        <aop:pointcut id="pc" expression="execution(* cn.wolfcode.wms.service.*Service.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pc"/>
+    </aop:config>
+
+    <!--when:底层封装了环绕增强-->
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        <tx:attributes>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="list*" read-only="true"/>
+            <tx:method name="query*" read-only="true"/>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+</beans>

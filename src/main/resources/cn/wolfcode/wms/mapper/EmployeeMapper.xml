@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wolfcode.wms.mapper.EmployeeMapper">
+  <resultMap id="BaseResultMap" type="cn.wolfcode.wms.domain.Employee">
+    <id column="id" property="id" />
+    <result column="name" property="name" />
+    <result column="password" property="password" />
+    <result column="email" property="email" />
+    <result column="age" property="age" />
+    <result column="admin" property="admin" />
+    <!--封装one方对象-->
+    <association property="dept" javaType="Department" columnPrefix="d_">
+      <id column="id" property="id" />
+      <result column="name" property="name" />
+    </association>
+    <!--封装many方对象-->
+    <collection property="roles" column="id"
+      select="cn.wolfcode.wms.mapper.RoleMapper.selectByEmployeeId"/>
+  </resultMap>
+  <delete id="deleteByPrimaryKey">
+    delete from employee
+    where id = #{id}
+  </delete>
+  <delete id="deleteRelaction">
+    delete from employee_role where employee_id = #{employeeId}
+  </delete>
+  <delete id="batchDelete">
+    delete from employee where id in
+    <foreach collection="array" item="ele" open="(" separator="," close=")">
+      #{ele}
+    </foreach>
+  </delete>
+
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+    insert into employee (name, password, email, age, admin, dept_id)
+    values (#{name}, #{password}, #{email}, #{age}, #{admin}, #{dept.id})
+  </insert>
+  <insert id="insertRelaction">
+    insert into employee_role (employee_id, role_id)
+    values (#{employeeId}, #{roleId})
+  </insert>
+  <update id="updateByPrimaryKey">
+    update employee
+
+    set name = #{name},
+      email = #{email},
+      age = #{age},
+      admin = #{admin},
+      dept_id = #{dept.id}
+    where id = #{id}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+    <include refid="base_column"/>
+    <include refid="base_table"/>
+    where e.id = #{id}
+  </select>
+    <select id="selectForCount" resultType="int">
+      select count(*)
+      <include refid="base_table"/>
+      <include refid="base_where"/>
+    </select>
+  <select id="selectForList" resultMap="BaseResultMap">
+      <include refid="base_column"/>
+      <include refid="base_table"/>
+      <include refid="base_where"/>
+    limit #{start}, #{pageSize}
+  </select>
+
+  <select id="selectByInfo" resultType="Employee">
+    select id, name, admin from employee
+    where name = #{username} and password = #{password}
+  </select>
+
+  <sql id="base_column">
+    select
+      e.id, e.name, e.password, e.email, e.age, e.admin,
+      d.id d_id, d.name d_name
+  </sql>
+  <sql id="base_table">
+    from employee e
+    left join department d on e.dept_id = d.id
+  </sql>
+  <sql id="base_where">
+    <where>
+      <if test="keyword != null">
+        and (e.name like concat('%', #{keyword}, '%') or
+          e.email like concat('%', #{keyword}, '%'))
+      </if>
+      <if test="deptId > 0">
+        and e.dept_id = #{deptId}
+      </if>
+    </where>
+  </sql>
+</mapper>

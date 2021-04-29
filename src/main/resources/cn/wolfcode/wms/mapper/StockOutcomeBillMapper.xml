@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.wolfcode.wms.mapper.StockOutcomeBillMapper">
+  <resultMap id="BaseResultMap" type="cn.wolfcode.wms.domain.StockOutcomeBill">
+    <id column="id" property="id" />
+    <result column="sn" property="sn" />
+    <result column="vdate" property="vdate" />
+    <result column="status" property="status" />
+    <result column="totalAmount" property="totalAmount" />
+    <result column="totalNumber" property="totalNumber" />
+    <result column="auditTime" property="auditTime" />
+    <result column="inputTime" property="inputTime" />
+    <!-- ===================================== -->
+    <association property="inputUser" javaType="Employee" columnPrefix="inputUser_">
+      <id column="id" property="id" />
+      <result column="name" property="name" />
+    </association>
+    <association property="auditor" javaType="Employee" columnPrefix="audit_">
+      <result column="name" property="name" />
+    </association>
+    <association property="depot" javaType="Depot" columnPrefix="d_">
+      <id column="id" property="id" />
+      <result column="name" property="name" />
+    </association>
+    <association property="client" javaType="Client" columnPrefix="c_">
+      <id column="id" property="id" />
+      <result column="name" property="name" />
+    </association>
+    <!--封装当前单据的明显-->
+    <collection property="items" column="id"
+                select="cn.wolfcode.wms.mapper.StockOutcomeBillItemMapper.selectItemsByBillId"/>
+  </resultMap>
+  <delete id="deleteByPrimaryKey">
+    delete from stockOutcomebill
+    where id = #{id}
+  </delete>
+  <delete id="deleteItemsByBillId">
+    delete from stockOutcomeBillItem where bill_id = #{billId}
+  </delete>
+  <insert id="insert" keyProperty="id" useGeneratedKeys="true">
+    insert into stockOutcomebill (sn, vdate, status, totalAmount, totalNumber,
+      inputTime, inputUser_id, depot_id, client_id)
+    values (#{sn}, #{vdate}, #{status}, #{totalAmount}, #{totalNumber},
+      #{inputTime}, #{inputUser.id}, #{depot.id}, #{client.id})
+  </insert>
+  <update id="updateByPrimaryKey">
+    update stockOutcomebill
+    set sn = #{sn},
+      vdate = #{vdate},
+      totalAmount = #{totalAmount},
+      totalNumber = #{totalNumber},
+      depot_id = #{depot.id},
+      client_id = #{client.id}
+    where id = #{id}
+  </update>
+  <update id="audit" parameterType="stockOutcomeBill">
+    update stockOutcomebill
+    set
+      status = #{status},
+      auditor_id = #{auditor.id},
+      auditTime = #{auditTime}
+    where id = #{id}
+  </update>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+  <include refid="base_column"/>
+  <include refid="base_table"/>
+  where bill.id = #{id}
+</select>
+  <select id="selectForCount" resultType="int">
+    select count(*)
+    <include refid="base_table"/>
+    <include refid="base_where"/>
+  </select>
+  <select id="selectForList" resultMap="BaseResultMap">
+    <include refid="base_column"/>
+    <include refid="base_table"/>
+    <include refid="base_where"/>
+    limit #{start}, #{pageSize}
+  </select>
+
+  <sql id="base_column">
+    select
+      bill.id,bill.sn, bill.vdate, bill.totalNumber, bill.totalAmount, bill.status,
+      d.id d_id, d.name d_name,
+      inputUser.id inputUser_id,inputUser.name inputUser_name,
+      audit.name audit_name,
+      c.id c_id, c.name c_name
+  </sql>
+  <sql id="base_table">
+    from stockOutcomeBill bill
+    join employee inputUser on bill.inputUser_id = inputUser.id
+    left join employee audit on bill.auditor_id = audit.id
+    join depot d on d.id = bill.depot_id
+    join client c on c.id = bill.client_id
+  </sql>
+  <sql id="base_where">
+    <where>
+      <if test="beginDate != null">
+        and bill.vdate &gt;= #{beginDate}
+      </if>
+      <if test="endDate != null">
+        and bill.vdate &lt;= #{endDate}
+      </if>
+      <if test="depotId > 0">
+        and bill.depot_id = #{depotId}
+      </if>
+      <if test="clientId > 0">
+        and bill.client_id = #{clientId}
+      </if>
+      <if test="status > 0">
+        and bill.status = #{status}
+      </if>
+    </where>
+  </sql>
+</mapper>
