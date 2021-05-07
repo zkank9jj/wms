@@ -7,4 +7,6 @@ import lombok.Setter;
 public class Brand extends BaseDomain {
     private String name;
     private String sn;
+    //age age age
+    private String age;
 }
