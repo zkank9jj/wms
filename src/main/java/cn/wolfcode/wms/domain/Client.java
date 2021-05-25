@@ -10,4 +10,6 @@ public class Client extends BaseDomain {
     private String sn;
 
     private String phone;
+
+    private String age;
 }
