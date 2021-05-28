@@ -11,4 +11,7 @@ public class Brand extends BaseDomain {
     private String age;
 
     private String number;
+
+
+    private String ooxx;
 }
